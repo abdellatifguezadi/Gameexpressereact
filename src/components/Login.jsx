@@ -1,9 +1,10 @@
 import React, { useState } from 'react'
-import axios from 'axios'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, Link } from 'react-router-dom'
+import { useAuth } from '../context/AuthContext'
 
-function login() {
+function Login() {
   const navigate = useNavigate()
+  const { login, error: authError } = useAuth()
   const [formData, setFormData] = useState({
     email: '',
     password: ''
@@ -20,24 +21,36 @@ function login() {
   const handleSubmit = async (e) => {
     e.preventDefault()
     try {
-      const response = await axios.post('http://127.0.0.1:8000/api/v1/admin/login', formData, {
-        headers: {
-          'Content-Type': 'application/json'
+      const userData = await login(formData.email, formData.password)
+
+      if (userData) {
+        if (userData.roles?.includes('super_admin') || 
+            userData.roles?.includes('user_manager') || 
+            userData.roles?.includes('product_manager') ||
+            userData.roles?.some(role => 
+              role.name === 'super_admin' || 
+              role.name === 'user_manager' || 
+              role.name === 'product_manager'
+            )) {
+          navigate('/admin/dashboard')
+        } else {
+          navigate('/dashboard')
         }
-      })
-      console.log('Login successful:', response.data)
-      localStorage.setItem('token', response.data.token)
-      navigate('/dashboard')
+      }
+      console.log(userData)
     } catch (err) {
       setError(err.response?.data?.message || 'Login failed')
     }
+    
   }
 
   return (
     <div className='min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-900 via-gray-900 to-black'>
       <div className='bg-gray-800 p-8 rounded-lg shadow-lg w-96 border border-blue-500'>
         <h2 className='text-2xl font-bold mb-6 text-center text-blue-400'>Login</h2>
-        {error && <div className='text-red-500 mb-4 text-center'>{error}</div>}
+        {(error || authError) && (
+          <div className='text-red-500 mb-4 text-center'>{error || authError}</div>
+        )}
         <form className='space-y-4' onSubmit={handleSubmit}>
           <div>
             <label className='block text-sm font-medium text-blue-300'>Email</label>
@@ -70,9 +83,17 @@ function login() {
             Login
           </button>
         </form>
+        <div className="text-center">
+          <p className="text-sm text-gray-600">
+            Vous n'avez pas de compte ?{' '}
+            <Link to="/register" className="font-medium text-indigo-600 hover:text-indigo-500">
+              S'inscrire
+            </Link>
+          </p>
+        </div>
       </div>
     </div>
   )
 }
 
-export default login
+export default Login

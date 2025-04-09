@@ -1,9 +1,10 @@
 import React, { useState } from 'react'
-import axios from 'axios'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, Link } from 'react-router-dom'
+import { useAuth } from '../context/AuthContext'
 
 function Register() {
   const navigate = useNavigate()
+  const { register, error: authError } = useAuth()
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -22,13 +23,28 @@ function Register() {
   const handleSubmit = async (e) => {
     e.preventDefault()
     try {
-      const response = await axios.post('http://127.0.0.1:8000/api/v1/admin/register', formData, {
-        headers: {
-          'Content-Type': 'application/json'
+      const userData = await register(
+        formData.name,
+        formData.email,
+        formData.password,
+        formData.password_confirmation
+      )
+
+      if (userData) {
+        // Redirect based on role
+        if (userData.roles?.includes('super_admin') || 
+            userData.roles?.includes('user_manager') || 
+            userData.roles?.includes('product_manager') ||
+            userData.roles?.some(role => 
+              role.name === 'super_admin' || 
+              role.name === 'user_manager' || 
+              role.name === 'product_manager'
+            )) {
+          navigate('/admin/dashboard')
+        } else {
+          navigate('/dashboard')
         }
-      })
-      console.log('Registration successful:', response.data)
-      navigate('/login')
+      }
     } catch (err) {
       setError(err.response?.data?.message || 'Registration failed')
     }
@@ -38,7 +54,9 @@ function Register() {
     <div className='min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-900 via-gray-900 to-black'>
       <div className='bg-gray-800 p-8 rounded-lg shadow-lg w-96 border border-blue-500'>
         <h2 className='text-2xl font-bold mb-6 text-center text-blue-400'>Register</h2>
-        {error && <div className='text-red-500 mb-4 text-center'>{error}</div>}
+        {(error || authError) && (
+          <div className='text-red-500 mb-4 text-center'>{error || authError}</div>
+        )}
         <form className='space-y-4' onSubmit={handleSubmit}>
           <div>
             <label className='block text-sm font-medium text-blue-300'>Full Name</label>
@@ -95,6 +113,14 @@ function Register() {
             Register
           </button>
         </form>
+        <div className="text-center">
+          <p className="text-sm text-gray-600">
+            Vous avez déjà un compte ?{' '}
+            <Link to="/login" className="font-medium text-indigo-600 hover:text-indigo-500">
+              Se connecter
+            </Link>
+          </p>
+        </div>
       </div>
     </div>
   )
