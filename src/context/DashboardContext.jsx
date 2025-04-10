@@ -1,6 +1,7 @@
 import React, { createContext, useState, useContext, useEffect } from 'react'
 import axiosInstance from '../utils/axios'
 import { useAuth } from './AuthContext'
+import { useNavigate } from 'react-router-dom'
 
 const DashboardContext = createContext()
 
@@ -14,7 +15,8 @@ export const DashboardProvider = ({ children }) => {
   })
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
-  const { user, hasRole } = useAuth()
+  const { user, hasRole, logout } = useAuth()
+  const navigate = useNavigate()
 
   const fetchDashboardData = async () => {
     try {
@@ -26,12 +28,42 @@ export const DashboardProvider = ({ children }) => {
         return
       }
 
+      // Vérifier si le token est disponible
+      const token = localStorage.getItem('token')
+      if (!token) {
+        setError('Vous n\'êtes pas connecté. Veuillez vous connecter.')
+        setLoading(false)
+        return
+      }
+
       const response = await axiosInstance.get('/admin/dashboard')
+
+      // Vérifier si la réponse contient un message d'erreur malgré un status 200
+      if (response.data && (
+        response.data.message === "Please login" || 
+        response.data.message === "Unauthenticated" ||
+        response.data.message === "Token has expired"
+      )) {
+        setError('Session expirée. Veuillez vous reconnecter.')
+        // Déconnecter l'utilisateur car le token n'est plus valide
+        logout()
+        setLoading(false)
+        return
+      }
+
       setDashboardData(response.data)
       setLoading(false)
     } catch (err) {
       console.error('Dashboard data fetch error:', err)
-      setError(err.response?.data?.message || 'Failed to fetch dashboard data')
+      
+      // Gérer les erreurs d'authentification
+      if (err.response && (err.response.status === 401 || err.response.status === 419)) {
+        setError('Session expirée ou non autorisé. Veuillez vous reconnecter.')
+        // Déconnecter l'utilisateur car le token n'est plus valide
+        logout()
+      } else {
+        setError(err.response?.data?.message || 'Failed to fetch dashboard data')
+      }
       setLoading(false)
     }
   }

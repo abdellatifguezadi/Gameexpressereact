@@ -1,10 +1,12 @@
 import React, { useEffect } from 'react'
 import { useAuth } from '../context/AuthContext'
 import { useDashboard } from '../context/DashboardContext'
+import { useNavigate } from 'react-router-dom'
 
 function AdminDashboard() {
   const { user, hasRole } = useAuth()
   const { dashboardData, loading, error, fetchDashboardData } = useDashboard()
+  const navigate = useNavigate()
   
   useEffect(() => {
     fetchDashboardData()
@@ -42,7 +44,9 @@ function AdminDashboard() {
     <div className="min-h-screen bg-gray-100">
       <div className="container mx-auto px-4 py-8">
         <div className="bg-white rounded-lg shadow-lg p-6">
-          <h1 className="text-2xl font-bold text-gray-800 mb-6">Tableau de Bord Administrateur</h1>
+          <div className="flex justify-between items-center mb-6">
+            <h1 className="text-2xl font-bold text-gray-800">Tableau de Bord Administrateur</h1>
+          </div>
 
           <div className="mb-6">
             <h2 className="text-xl font-semibold text-gray-700 mb-2">Informations de l'utilisateur</h2>
