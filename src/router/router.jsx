@@ -56,6 +56,7 @@ export const AppRoutes = () => {
           }
         />
         
+        {/* Admin Dashboard */}
         <Route
           path="/admin/dashboard"
           element={
@@ -65,6 +66,12 @@ export const AppRoutes = () => {
           }
         />
       </Route>
+
+      {/* Redirect API routes to corresponding frontend routes */}
+      <Route
+        path="/api/v1/admin/dashboard"
+        element={<Navigate to="/admin/dashboard" replace />}
+      />
 
       {/* Route 404 - doit être la dernière */}
       <Route path="*" element={<NotFound />} />
