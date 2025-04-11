@@ -23,9 +23,16 @@ function Header() {
             <nav className="hidden md:flex space-x-4">
               {user ? (
                 hasRole('super_admin') || hasRole('user_manager') || hasRole('product_manager') ? (
-                  <Link to="/admin/dashboard" className="text-gray-600 hover:text-blue-600">
-                    Admin Dashboard
-                  </Link>
+                  <>
+                    <Link to="/admin/dashboard" className="text-gray-600 hover:text-blue-600">
+                      Admin Dashboard
+                    </Link>
+                    {hasRole('super_admin') && (
+                      <Link to="/admin/categories" className="text-gray-600 hover:text-blue-600">
+                        Catégories
+                      </Link>
+                    )}
+                  </>
                 ) : (
                   <Link to="/dashboard" className="text-gray-600 hover:text-blue-600">
                     Dashboard

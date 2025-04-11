@@ -25,16 +25,44 @@ instance.interceptors.request.use(
 // Add a response interceptor to handle common errors
 instance.interceptors.response.use(
     (response) => {
+        // Check if the response contains an authentication error message despite a 200 status
+        if (response.data && (
+            response.data.message === "Please login" || 
+            response.data.message === "Unauthenticated" ||
+            response.data.message === "Token has expired"
+        )) {
+            // Redirect to login page or force refresh token
+            console.error('Authentication error:', response.data.message);
+            
+            // For security, clear token on authentication errors
+            localStorage.removeItem('token');
+            
+            // Return a rejected promise to trigger the catch block
+            return Promise.reject({
+                response: {
+                    status: 401,
+                    data: { message: response.data.message }
+                }
+            });
+        }
         return response;
     },
     (error) => {
         // Handle Unauthorized errors (token expired, etc.)
-        if (error.response && error.response.status === 401) {
-            // You can redirect to login or refresh token here
+        if (error.response && (error.response.status === 401 || error.response.status === 419)) {
             console.error('Unauthorized: Token may be invalid or expired');
-            // Optional: Clear token and user data
-            // localStorage.removeItem('token');
-            // localStorage.removeItem('user');
+            
+            // Clear token and user data on authentication errors
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            
+            // Redirect to login page
+            // We don't want to actually redirect from within an interceptor as that would 
+            // be abrupt. Instead, let the components handle the redirect with proper UX.
+            if (window.location.pathname !== '/login') {
+                // Store the current URL to redirect back after login
+                localStorage.setItem('redirectAfterLogin', window.location.pathname);
+            }
         }
         return Promise.reject(error);
     }
