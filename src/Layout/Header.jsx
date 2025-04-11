@@ -28,9 +28,14 @@ function Header() {
                       Admin Dashboard
                     </Link>
                     {hasRole('super_admin') && (
-                      <Link to="/admin/categories" className="text-gray-600 hover:text-blue-600">
-                        Catégories
-                      </Link>
+                      <>
+                        <Link to="/admin/categories" className="text-gray-600 hover:text-blue-600">
+                          Catégories
+                        </Link>
+                        <Link to="/admin/products" className="text-gray-600 hover:text-blue-600">
+                          Produits
+                        </Link>
+                      </>
                     )}
                   </>
                 ) : (

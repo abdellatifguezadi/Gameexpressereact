@@ -4,6 +4,7 @@ import Register from '../components/Register';
 import Dashboard from '../components/Dashboard';
 import AdminDashboard from '../components/AdminDashboard';
 import Categories from '../components/Categories';
+import Products from '../components/Products';
 import ProtectedRoute from '../components/ProtectedRoute';
 import Forbidden from '../components/Forbidden';
 import NotFound from '../components/NotFound';
@@ -76,6 +77,16 @@ export const AppRoutes = () => {
             </ProtectedRoute>
           }
         />
+
+        {/* Products Management - Super Admin and Product Manager */}
+        <Route
+          path="/admin/products"
+          element={
+            <ProtectedRoute requiredRoles={['super_admin', 'product_manager']}>
+              <Products />
+            </ProtectedRoute>
+          }
+        />
       </Route>
 
       {/* Redirect API routes to corresponding frontend routes */}
@@ -87,6 +98,11 @@ export const AppRoutes = () => {
       <Route
         path="/api/v1/admin/categories"
         element={<Navigate to="/admin/categories" replace />}
+      />
+
+      <Route
+        path="/api/v1/admin/products"
+        element={<Navigate to="/admin/products" replace />}
       />
 
       {/* Route 404 - doit être la dernière */}
