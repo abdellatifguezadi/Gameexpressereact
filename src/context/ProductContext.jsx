@@ -105,12 +105,7 @@ export const ProductProvider = ({ children }) => {
       setLoading(true)
       setError(null)
       
-      console.log('Product data received in updateProduct:', productData)
-      
-      // Utiliser FormData pour les fichiers
       const formData = new FormData()
-      
-      // Ajouter _method: put pour Laravel
       formData.append('_method', 'put')
       
       // Ajouter les champs de base
@@ -122,17 +117,11 @@ export const ProductProvider = ({ children }) => {
       
       // Ajouter les images seulement si elles existent
       if (productData.images && productData.images.length > 0) {
-        console.log('Images to be sent:', productData.images)
         productData.images.forEach((image, index) => {
           if (image instanceof File) {
             formData.append(`images[${index}]`, image)
           }
         })
-      }
-      
-      console.log('FormData contents:')
-      for (let pair of formData.entries()) {
-        console.log(pair[0] + ': ' + pair[1])
       }
       
       const response = await axios.post(`/admin/products/${id}`, formData, {
@@ -141,9 +130,6 @@ export const ProductProvider = ({ children }) => {
         }
       })
       
-      console.log('Response from server:', response.data)
-      
-      // Mettre à jour la liste des produits
       setProducts(prev => prev.map(product => 
         product.id === id ? response.data.product : product
       ))
