@@ -33,13 +33,12 @@ const productSchema = Yup.object().shape({
     .typeError('La catégorie doit être un nombre'),
   images: Yup.array()
     .of(Yup.mixed())
-    .min(1, 'Au moins une image est requise')
     .test('fileSize', 'Une ou plusieurs images sont trop volumineuses', (value) => {
-      if (!value || value.length === 0) return false
+      if (!value || value.length === 0) return true // Rendre les images optionnelles
       return value.every(file => file.size <= 2 * 1024 * 1024) // 2MB max
     })
     .test('fileType', 'Format d\'image non supporté', (value) => {
-      if (!value || value.length === 0) return false
+      if (!value || value.length === 0) return true // Rendre les images optionnelles
       return value.every(file => 
         ['image/jpeg', 'image/png', 'image/jpg', 'image/gif'].includes(file.type)
       )
@@ -251,6 +250,10 @@ function Products() {
       // Si nous avons des images, les prendre toutes
       if (formData.images.length > 0) {
         submitData.images = formData.images
+      } else if (formMode === 'edit') {
+        // Si c'est une mise à jour et qu'il n'y a pas de nouvelles images,
+        // ne pas envoyer de tableau d'images vide
+        delete submitData.images;
       }
       
       console.log('Data to be sent:', submitData)
@@ -293,6 +296,19 @@ function Products() {
     if (window.confirm('Êtes-vous sûr de vouloir supprimer cette image ?')) {
       await deleteProductImage(productId, imageId)
       fetchProducts()
+    }
+  }
+
+  const openProductDetails = async (product) => {
+    setFormMode('details')
+    
+    try {
+      // Récupérer le produit avec toutes ses informations
+      const productWithDetails = await fetchProduct(product.id)
+      setSelectedProduct(productWithDetails)
+    } catch (error) {
+      console.error('Error fetching product details:', error)
+      setSelectedProduct(product)
     }
   }
 
@@ -369,6 +385,126 @@ function Products() {
               </button>
             </div>
           </div>
+
+          {/* Détails du produit */}
+          {formMode === 'details' && selectedProduct && (
+            <div className="absolute top-24 left-1/2 transform -translate-x-1/2 bg-white rounded-xl shadow-2xl border border-gray-200 p-6 z-10 w-full max-w-2xl">
+              <div className="flex justify-between items-center mb-4 pb-2 border-b border-gray-100">
+                <h2 className="text-xl font-bold bg-gradient-to-r from-blue-500 to-purple-600 bg-clip-text text-transparent">
+                  Détails du produit
+                </h2>
+                <button 
+                  onClick={closeForm}
+                  className="text-gray-400 hover:text-gray-600 transition-colors"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+
+              <div className="space-y-6">
+                {/* Informations de base */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <h3 className="text-sm font-semibold text-gray-500 mb-1">ID</h3>
+                    <p className="text-gray-900">{selectedProduct.id}</p>
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-semibold text-gray-500 mb-1">Nom</h3>
+                    <p className="text-gray-900">{selectedProduct.name}</p>
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-semibold text-gray-500 mb-1">Slug</h3>
+                    <p className="text-gray-900">{selectedProduct.slug}</p>
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-semibold text-gray-500 mb-1">Prix</h3>
+                    <p className="text-gray-900">${selectedProduct.price}</p>
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-semibold text-gray-500 mb-1">Stock</h3>
+                    <p className="text-gray-900">{selectedProduct.stock}</p>
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-semibold text-gray-500 mb-1">Statut</h3>
+                    <p>
+                      <span 
+                        className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${
+                          selectedProduct.status === 'available' 
+                            ? 'bg-green-100 text-green-800' 
+                            : 'bg-red-100 text-red-800'
+                        }`}
+                      >
+                        {selectedProduct.status === 'available' ? 'Disponible' : 'Rupture de stock'}
+                      </span>
+                    </p>
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-semibold text-gray-500 mb-1">Catégorie</h3>
+                    <p className="text-gray-900">
+                      {categories.find(cat => cat.id === selectedProduct.category_id)?.name || 'Catégorie inconnue'}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Images du produit */}
+                <div>
+                  <h3 className="text-sm font-semibold text-gray-500 mb-2">Images du produit</h3>
+                  {selectedProduct.images && selectedProduct.images.length > 0 ? (
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 mt-2">
+                      {selectedProduct.images.map((image, index) => (
+                        <div key={image.id || index} className="relative group">
+                          <img
+                            src={image.image_url}
+                            alt={`${selectedProduct.name} - Image ${index + 1}`}
+                            className="w-full h-32 object-cover rounded-lg"
+                          />
+                          {image.is_primary && (
+                            <span className="absolute top-2 left-2 bg-blue-500 text-white text-xs px-2 py-1 rounded-full">
+                              Principale
+                            </span>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-gray-500 italic">Aucune image disponible</p>
+                  )}
+                </div>
+
+                {/* Dates */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4 border-t border-gray-100">
+                  <div>
+                    <h3 className="text-sm font-semibold text-gray-500 mb-1">Créé le</h3>
+                    <p className="text-gray-900">{new Date(selectedProduct.created_at).toLocaleString()}</p>
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-semibold text-gray-500 mb-1">Dernière mise à jour</h3>
+                    <p className="text-gray-900">{new Date(selectedProduct.updated_at).toLocaleString()}</p>
+                  </div>
+                </div>
+
+                <div className="flex justify-end space-x-3 mt-6 pt-4 border-t border-gray-100">
+                  <button
+                    onClick={closeForm}
+                    className="bg-gray-200 text-gray-700 px-5 py-2 rounded-lg hover:bg-gray-300 transition-all font-medium"
+                  >
+                    Fermer
+                  </button>
+                  <button
+                    onClick={() => {
+                      closeForm();
+                      openEditForm(selectedProduct);
+                    }}
+                    className="bg-gradient-to-r from-blue-500 to-blue-600 text-white px-5 py-2 rounded-lg hover:from-blue-600 hover:to-blue-700 transition-all font-medium shadow-md"
+                  >
+                    Modifier
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Formulaire d'ajout/modification */}
           {(formMode === 'create' || formMode === 'edit') && (
@@ -732,6 +868,16 @@ function Products() {
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                               </svg>
                               Modifier
+                            </button>
+                            <button 
+                              onClick={() => openProductDetails(product)} 
+                              className="bg-gradient-to-r from-blue-400 to-blue-500 text-white px-3 py-1 rounded-lg text-sm hover:from-blue-500 hover:to-blue-600 transition-all shadow-sm flex items-center"
+                            >
+                              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                              </svg>
+                              Détails
                             </button>
                             <button 
                               onClick={() => openDeleteForm(product.id)} 
