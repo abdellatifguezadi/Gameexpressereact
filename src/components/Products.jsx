@@ -80,7 +80,6 @@ function Products() {
   
   const navigate = useNavigate()
 
-  // Vérification de l'authentification et des rôles
   useEffect(() => {
     if (!user) {
       navigate('/login')
@@ -190,21 +189,17 @@ function Products() {
   }
 
   const handleImageChange = (e) => {
-    console.log('New images selected:', e.target.files)
     const files = Array.from(e.target.files)
-    setFormData(prev => {
-      const newImages = [...prev.images, ...files]
-      console.log('Updated formData images:', newImages)
-      return { ...prev, images: newImages }
-    })
-    
-    // Créer des prévisualisations pour les nouvelles images
-    const previews = files.map(file => URL.createObjectURL(file))
-    setPreviewImages(prev => {
-      const newPreviews = [...prev, ...previews]
-      console.log('Updated preview images:', newPreviews)
-      return newPreviews
-    })
+    if (files.length > 0) {
+      setFormData(prev => ({
+        ...prev,
+        images: [...prev.images, ...files]
+      }))
+      
+      // Créer des prévisualisations pour les nouvelles images
+      const previews = files.map(file => URL.createObjectURL(file))
+      setPreviewImages(prev => [...prev, ...previews])
+    }
   }
 
   const handleDragOver = (e) => {
@@ -244,15 +239,12 @@ function Products() {
     
     try {
       console.log('Submitting form with data:', formData)
-      // Créer une copie des données du formulaire
       const submitData = { ...formData }
       
       // Si nous avons des images, les prendre toutes
       if (formData.images.length > 0) {
         submitData.images = formData.images
       } else if (formMode === 'edit') {
-        // Si c'est une mise à jour et qu'il n'y a pas de nouvelles images,
-        // ne pas envoyer de tableau d'images vide
         delete submitData.images;
       }
       
@@ -303,7 +295,6 @@ function Products() {
     setFormMode('details')
     
     try {
-      // Récupérer le produit avec toutes ses informations
       const productWithDetails = await fetchProduct(product.id)
       setSelectedProduct(productWithDetails)
     } catch (error) {
@@ -451,30 +442,34 @@ function Products() {
                 {/* Images du produit */}
                 <div>
                   <h3 className="text-sm font-semibold text-gray-500 mb-2">Images du produit</h3>
-                  {selectedProduct.images && selectedProduct.images.length > 0 ? (
-                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 mt-2">
-                      {selectedProduct.images.map((image, index) => (
-                        <div key={image.id || index} className="relative group">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 mt-2">
+                    {selectedProduct.images && selectedProduct.images.map((image, index) => (
+                      <div key={image.id || index} className="relative group">
+                        <div className="w-full h-32 relative">
                           <img
-                            src={image.image_url}
+                            src={image.image_url.startsWith('http') ? image.image_url : `http://127.0.0.1:8000${image.image_url}`}
                             alt={`${selectedProduct.name} - Image ${index + 1}`}
-                            className="w-full h-32 object-cover rounded-lg"
+                            className="w-full h-full object-cover rounded-lg"
+                            onError={(e) => {
+                              e.target.src = 'https://via.placeholder.com/150?text=Image+non+disponible';
+                            }}
                           />
-                          {image.is_primary && (
+                          {image.is_primary === 1 && (
                             <span className="absolute top-2 left-2 bg-blue-500 text-white text-xs px-2 py-1 rounded-full">
                               Principale
                             </span>
                           )}
                         </div>
-                      ))}
-                    </div>
-                  ) : (
+                      </div>
+                    ))}
+                  </div>
+                  {(!selectedProduct.images || selectedProduct.images.length === 0) && (
                     <p className="text-gray-500 italic">Aucune image disponible</p>
                   )}
                 </div>
 
                 {/* Dates */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4 border-t border-gray-100">
+                {/* <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4 border-t border-gray-100">
                   <div>
                     <h3 className="text-sm font-semibold text-gray-500 mb-1">Créé le</h3>
                     <p className="text-gray-900">{new Date(selectedProduct.created_at).toLocaleString()}</p>
@@ -483,7 +478,7 @@ function Products() {
                     <h3 className="text-sm font-semibold text-gray-500 mb-1">Dernière mise à jour</h3>
                     <p className="text-gray-900">{new Date(selectedProduct.updated_at).toLocaleString()}</p>
                   </div>
-                </div>
+                </div> */}
 
                 <div className="flex justify-end space-x-3 mt-6 pt-4 border-t border-gray-100">
                   <button
@@ -825,11 +820,16 @@ function Products() {
                       <tr key={product.id} className={`hover:bg-blue-50 transition-colors ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}`}>
                         <td className="py-4 px-4 text-gray-700 font-medium">{product.id}</td>
                         <td className="py-4 px-4">
-                          {product.images?.find(img => img.is_primary) ? (
+                          {product.images && product.images.find(img => img.is_primary) ? (
                             <img
-                              src={product.images.find(img => img.is_primary).image_url}
+                              src={product.images.find(img => img.is_primary).image_url.startsWith('http') 
+                                ? product.images.find(img => img.is_primary).image_url 
+                                : `http://127.0.0.1:8000${product.images.find(img => img.is_primary).image_url}`}
                               alt={product.name}
                               className="w-12 h-12 object-cover rounded-lg"
+                              onError={(e) => {
+                                e.target.src = 'https://via.placeholder.com/150?text=Image+non+disponible';
+                              }}
                             />
                           ) : (
                             <div className="w-12 h-12 bg-gray-200 rounded-lg flex items-center justify-center">

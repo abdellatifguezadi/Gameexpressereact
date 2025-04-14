@@ -4,7 +4,7 @@ import { useCategory } from '../context/CategoryContext'
 import { useNavigate } from 'react-router-dom'
 import * as Yup from 'yup'
 
-// Schéma de validation Yup
+
 const categorySchema = Yup.object().shape({
   name: Yup.string()
     .required('Le nom est requis')
@@ -30,7 +30,7 @@ function Categories() {
     deleteCategory
   } = useCategory()
   
-  const [formMode, setFormMode] = useState(null) // null, 'create', 'edit', 'delete'
+  const [formMode, setFormMode] = useState(null) 
   const [selectedCategory, setSelectedCategory] = useState(null)
   const [formData, setFormData] = useState({ name: '', slug: '' })
   const [formErrors, setFormErrors] = useState({})
